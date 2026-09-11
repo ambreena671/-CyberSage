@@ -1,0 +1,5 @@
+timestamp,event,user,ip
+14:00,Successful Login,User02,10.0.0.10
+14:05,Database Access,User02,10.0.0.10
+14:07,Multiple Sensitive Files Accessed,User02,10.0.0.10
+14:10,Large Data Transfer,User02,10.0.0.10
