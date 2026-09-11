@@ -1,0 +1,6 @@
+timestamp,event,user,ip
+09:00,Suspicious Email,User01,mail
+09:03,Malicious Link Click,User01,web
+09:05,Login Attempt,User01,10.0.0.5
+09:06,Successful Login,User01,10.0.0.5
+09:10,Account Settings Changed,User01,10.0.0.5

@@ -1,0 +1,7 @@
+timestamp,event,user,ip
+09:10,Failed Login,Ali,192.168.1.20
+09:11,Failed Login,Ali,192.168.1.20
+09:13,Successful Login,Ali,192.168.1.20
+09:15,Admin Panel Access,Ali,192.168.1.20
+09:18,Sensitive File Access,Ali,192.168.1.20
+09:20,Large Data Transfer,Ali,192.168.1.20
