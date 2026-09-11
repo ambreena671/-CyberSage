@@ -1,0 +1,22 @@
+# Python / Byte-code
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Streamlit Local Secrets & Config
+.streamlit/secrets.toml
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Reports / Exports
+*.pdf
