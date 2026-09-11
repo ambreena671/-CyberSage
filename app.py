@@ -20,53 +20,77 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Dark Security Styling
+# Custom CSS for Dark Purple Sidebar & Light Dusty Main Theme
 CUSTOM_CSS = """
 <style>
+    /* Main App Background (Light Dust / Off-White) */
     .stApp {
-        background-color: #0d1117;
-        color: #c9d1d9;
+        background-color: #f4f3ef;
+        color: #2b2b2b;
+    }
+
+    /* Sidebar Background (Dark Cyber Purple) */
+    [data-testid="stSidebar"] {
+        background-color: #1a0b2e;
+        color: #f4f3ef;
+    }
+    
+    /* Sidebar Text & Titles */
+    [data-testid="stSidebar"] h1, 
+    [data-testid="stSidebar"] h2, 
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] label {
+        color: #e9d5ff !important;
+    }
+
+    /* Primary Investigate Button (Vibrant Neon Purple) */
+    .stButton > button[kind="primary"] {
+        background-color: #7e22ce !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        box-shadow: 0 4px 10px rgba(126, 34, 206, 0.4) !important;
+        transition: all 0.3s ease !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #9333ea !important;
+        box-shadow: 0 6px 15px rgba(147, 51, 234, 0.6) !important;
+        transform: translateY(-1px);
+    }
+
+    /* Metric Cards (Dusty Card Background) */
+    [data-testid="stMetricValue"] {
+        color: #581c87 !important;
+        font-weight: 700;
     }
     .stMetric {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        padding: 12px;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
-    .metric-card {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 8px;
-        padding: 16px;
-        text-align: center;
-    }
+
+    /* Attack Flow Cards */
     .flow-card {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 10px;
+        background-color: #ffffff;
+        border: 1px solid #d8b4fe;
+        border-radius: 12px;
         padding: 15px;
         margin: 5px;
         text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        color: #2b2b2b;
+        box-shadow: 0 4px 10px rgba(126, 34, 206, 0.08);
     }
-    .timeline-suspicious {
-        background-color: #3d1e24;
-        border-left: 4px solid #f85149;
-        padding: 10px;
-        margin-bottom: 8px;
-        border-radius: 4px;
-    }
-    .timeline-normal {
-        background-color: #161b22;
-        border-left: 4px solid #3fb950;
-        padding: 10px;
-        margin-bottom: 8px;
-        border-radius: 4px;
+
+    /* Information Boxes & Highlights */
+    .stAlert {
+        border-radius: 10px !important;
     }
 </style>
 """
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
-
 # Initialize Session State
 if "agent" not in st.session_state:
     st.session_state.agent = CyberSageAgent()
