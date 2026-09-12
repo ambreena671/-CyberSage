@@ -1,121 +1,110 @@
 """
-CyberSage - Log Parser Module
-Handles parsing, normalization, validation, flexible column mapping, and safe fallback extractions.
+Universal CyberSage Log Parser
+Dynamically detects, maps, and normalizes ANY security dataset (Kaggle, SIEM, Firewall, Auth Logs).
 """
 
 import pandas as pd
-import io
-from typing import Tuple, Dict, Any
+import datetime
 
-# Target schema expected by downstream correlation & risk engines
-REQUIRED_COLUMNS = {'timestamp', 'event', 'user', 'ip'}
-
-# Mapping dictionary for common log header variations across different SIEMs and datasets
-COLUMN_MAPPING = {
-    'time': 'timestamp',
-    'datetime': 'timestamp',
-    'date': 'timestamp',
-    'timestamp_utc': 'timestamp',
-    'action': 'event',
-    'activity': 'event',
-    'description': 'event',
-    'log_event': 'event',
-    'message': 'event',
-    'username': 'user',
-    'userid': 'user',
-    'account': 'user',
-    'src_ip': 'ip',
-    'srcip': 'ip',
-    'ip_address': 'ip',
-    'client_ip': 'ip',
-    'source_ip': 'ip',
-    'host': 'ip'
+# Comprehensive Alias Dictionary covering Kaggle, AWS, Splunk, Elastic, & CIC Datasets
+ALIASES = {
+    'timestamp': [
+        'timestamp', 'time', 'datetime', 'date', 'date_time', 'event_time', 
+        'timestamp_utc', 'start_time', 'flow_start', 'created_at', 'record_time'
+    ],
+    'event': [
+        'event', 'action', 'activity', 'description', 'log_event', 'message', 
+        'attack_type', 'label', 'action_taken', 'category', 'alert_description', 
+        'payload_data', 'event_type', 'signature', 'threat_level', 'status', 'protocol'
+    ],
+    'user': [
+        'user', 'username', 'userid', 'account', 'user_information', 'src_user', 
+        'source_user', 'identity', 'dst_user', 'login', 'account_name', 'email'
+    ],
+    'ip': [
+        'ip', 'src_ip', 'srcip', 'ip_address', 'client_ip', 'source_ip', 
+        'source_ip_address', 'host', 'src_host', 'source', 'dst_ip', 'destination_ip', 'origin'
+    ]
 }
 
-def parse_logs(file_data: Any, filename: str = "") -> Tuple[bool, pd.DataFrame, str]:
+def parse_logs(file_or_path):
     """
-    Parses CSV or TXT log content into a normalized pandas DataFrame.
-    If required columns are missing, it fills them gracefully with default values
-    and returns a informative warning message rather than halting investigation.
-    
-    Returns: (success: bool, dataframe: pd.DataFrame, message: str)
+    Parses and normalizes any log file into the standard CyberSage format:
+    [timestamp, event, user, ip]
     """
     try:
-        if isinstance(file_data, pd.DataFrame):
-            df = file_data.copy()
-        elif isinstance(file_data, str):
-            df = pd.read_csv(io.StringIO(file_data))
-        elif hasattr(file_data, 'read'):
-            content = file_data.read()
-            if isinstance(content, bytes):
-                content = content.decode('utf-8', errors='ignore')
-            df = pd.read_csv(io.StringIO(content))
+        # Load File
+        if hasattr(file_or_path, 'read'):
+            file_or_path.seek(0)
+            df = pd.read_csv(file_or_path)
+        elif isinstance(file_or_path, pd.DataFrame):
+            df = file_or_path.copy()
         else:
-            return False, pd.DataFrame(), "Invalid file upload format. Please upload a valid CSV or TXT file."
+            df = pd.read_csv(file_or_path)
 
         if df.empty:
-            return False, pd.DataFrame(), "The uploaded dataset is empty. Please provide a file with log entries."
+            return False, df, "The uploaded dataset is empty."
 
-        # Normalize column names (lowercase & strip whitespace)
-        df.columns = df.columns.astype(str).str.strip().str.lower()
+        # Clean Column Headers (lowercase and stripped)
+        original_cols = list(df.columns)
+        df.columns = [str(col).strip().lower().replace(' ', '_').replace('-', '_') for col in df.columns]
+
+        # Dynamic Mapping Engine
+        mapped_cols = {}
+        for target, keywords in ALIASES.items():
+            for kw in keywords:
+                matched = [c for c in df.columns if kw in c]
+                if matched:
+                    mapped_cols[target] = matched[0]
+                    break
+
+        # Fallback & Synthesis Strategy for Missing Target Columns
+        warnings = []
         
-        # Rename common header variations automatically
-        df = df.rename(columns=COLUMN_MAPPING)
-        
-        # Detect missing essential columns
-        missing = REQUIRED_COLUMNS - set(df.columns)
-        warning_msg = ""
+        # 1. Timestamp Fallback
+        if 'timestamp' in mapped_cols:
+            df['timestamp'] = df[mapped_cols['timestamp']]
+        else:
+            df['timestamp'] = [datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") for _ in range(len(df))]
+            warnings.append("timestamps were generated automatically")
 
-        # Auto-heal missing columns with safe defaults instead of crashing
-        if missing:
-            warning_msg = f"⚠️ Note: Missing columns ({', '.join(missing)}) were auto-filled with default placeholders.\n"
-            
-            if 'timestamp' in missing:
-                df['timestamp'] = [f"2026-09-12 10:00:{i:02d}" for i in range(len(df))]
-            if 'event' in missing:
-                # Try to salvage from any text column or set default
-                text_cols = df.select_dtypes(include=['object']).columns
-                if len(text_cols) > 0:
-                    df['event'] = df[text_cols[0]]
-                else:
-                    df['event'] = "Unclassified Security Event"
-            if 'user' in missing:
-                df['user'] = "Unknown_User"
-            if 'ip' in missing:
-                df['ip'] = "0.0.0.0"
+        # 2. Event Fallback (Synthesizes textual context from non-standard columns)
+        if 'event' in mapped_cols:
+            df['event'] = df[mapped_cols['event']].astype(str)
+        else:
+            # Aggregate string columns into a single event summary string
+            string_cols = df.select_dtypes(include=['object']).columns.tolist()
+            if string_cols:
+                df['event'] = df[string_cols].astype(str).agg(' | '.join, axis=1)
+                warnings.append("event activity was constructed from available text fields")
+            else:
+                df['event'] = "System Activity Recorded"
+                warnings.append("default event category applied")
 
-        # Strip extra spaces from string fields
-        for col in ['event', 'user', 'ip', 'timestamp']:
-            df[col] = df[col].astype(str).str.strip()
+        # 3. User Fallback
+        if 'user' in mapped_cols:
+            df['user'] = df[mapped_cols['user']].astype(str)
+        else:
+            df['user'] = "system_user"
+            warnings.append("default user assigned")
 
-        success_msg = f"Successfully processed {len(df)} records. {warning_msg}".strip()
-        return True, df, success_msg
+        # 4. IP Fallback
+        if 'ip' in mapped_cols:
+            df['ip'] = df[mapped_cols['ip']].astype(str)
+        else:
+            df['ip'] = "127.0.0.1"
+            warnings.append("default local IP assigned")
+
+        # Keep normalized schema
+        final_df = df[['timestamp', 'event', 'user', 'ip']].copy()
+
+        # Format Warning Message
+        if warnings:
+            msg = f"Successfully parsed {len(final_df)} records. Note: {', '.join(warnings)}."
+        else:
+            msg = f"Successfully mapped all columns across {len(final_df)} records."
+
+        return True, final_df, msg
 
     except Exception as e:
-        # Negative user-friendly response without crashing Streamlit
-        return False, pd.DataFrame(), f"Unable to parse log file structure: {str(e)}. Please verify CSV formatting."
-
-def extract_log_summary(df: pd.DataFrame) -> Dict[str, Any]:
-    """Extracts high-level security metrics from parsed logs."""
-    if df.empty:
-        return {
-            "total_events": 0,
-            "unique_users": 0,
-            "users_list": [],
-            "unique_ips": 0,
-            "ips_list": [],
-            "event_types": {},
-            "timeline_start": "N/A",
-            "timeline_end": "N/A"
-        }
-        
-    return {
-        "total_events": len(df),
-        "unique_users": df['user'].nunique(),
-        "users_list": df['user'].unique().tolist(),
-        "unique_ips": df['ip'].nunique(),
-        "ips_list": df['ip'].unique().tolist(),
-        "event_types": df['event'].value_counts().to_dict(),
-        "timeline_start": df['timestamp'].iloc[0] if not df.empty else "N/A",
-        "timeline_end": df['timestamp'].iloc[-1] if not df.empty else "N/A"
-    }
+        return False, pd.DataFrame(), f"Failed to parse log file: {str(e)}"
