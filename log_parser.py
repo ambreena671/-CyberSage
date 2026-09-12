@@ -5,8 +5,9 @@ Dynamically detects, maps, and normalizes ANY security dataset (Kaggle, SIEM, Fi
 
 import pandas as pd
 import datetime
+from typing import Dict, Any, Union, IO
 
-# Prioritized target aliases (exact matches checked before partial substring matches)
+# Prioritized target aliases
 ALIASES = {
     'timestamp': [
         'timestamp', 'time', 'datetime', 'date', 'date_time', 'event_time', 
@@ -28,23 +29,30 @@ ALIASES = {
     ]
 }
 
-def parse_logs(file_or_path):
+
+def parse_logs(file_or_path: Union[str, IO, pd.DataFrame]) -> pd.DataFrame:
     """
-    Parses and normalizes any log file into standard CyberSage schema:
+    Parses and normalizes any log dataset into standard CyberSage schema:
     [timestamp, event, user, ip]
     """
+    fallback_df = pd.DataFrame(columns=['timestamp', 'event', 'user', 'ip'])
+
+    if file_or_path is None:
+        return fallback_df
+
     try:
         # 1. Load Data
-        if hasattr(file_or_path, 'read'):
-            file_or_path.seek(0)
-            df = pd.read_csv(file_or_path)
-        elif isinstance(file_or_path, pd.DataFrame):
+        if isinstance(file_or_path, pd.DataFrame):
             df = file_or_path.copy()
+        elif hasattr(file_or_path, 'read'):
+            if hasattr(file_or_path, 'seek'):
+                file_or_path.seek(0)
+            df = pd.read_csv(file_or_path)
         else:
             df = pd.read_csv(file_or_path)
 
         if df.empty:
-            return False, df, "The uploaded dataset is empty."
+            return fallback_df
 
         # Clean Column Headers
         raw_cols = [str(col).strip() for col in df.columns]
@@ -53,7 +61,7 @@ def parse_logs(file_or_path):
 
         mapped_cols = {}
 
-        # 2. Prioritized Dynamic Column Mapping
+        # 2. Dynamic Column Mapping
         for target, keywords in ALIASES.items():
             # Pass A: Exact Match
             for kw in keywords:
@@ -69,63 +77,48 @@ def parse_logs(file_or_path):
                         mapped_cols[target] = matched[0]
                         break
 
-        warnings = []
-        
-        # 3. Normalization & Context Aggregation
+        # 3. Normalization
         
         # Timestamp Normalization
         if 'timestamp' in mapped_cols:
             df['timestamp'] = df[mapped_cols['timestamp']].astype(str)
         else:
-            df['timestamp'] = [datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") for _ in range(len(df))]
-            warnings.append("timestamps auto-filled")
+            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            df['timestamp'] = now_str
 
-        # Event / Activity Label Normalization
-        # If a explicit event column exists, use it; otherwise, concatenate text columns to preserve threat context
-        string_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        # Event Normalization
         if 'event' in mapped_cols and mapped_cols['event'] in df.columns:
-            primary_event = df[mapped_cols['event']].astype(str)
-            # If primary event is mostly generic/numeric, combine with other text fields for richer context
-            if len(string_cols) > 1:
-                other_text = df[string_cols].astype(str).agg(' | '.join, axis=1)
-                df['event'] = primary_event + " | " + other_text
-            else:
-                df['event'] = primary_event
-        elif string_cols:
-            df['event'] = df[string_cols].astype(str).agg(' | '.join, axis=1)
-            warnings.append("event constructed from text features")
+            df['event'] = df[mapped_cols['event']].astype(str)
         else:
-            df['event'] = "Suspicious Security Telemetry Record"
-            warnings.append("default event category applied")
+            string_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+            if string_cols:
+                df['event'] = df[string_cols].astype(str).agg(' | '.join, axis=1)
+            else:
+                df['event'] = "Security Telemetry Event"
 
         # User Normalization
         if 'user' in mapped_cols:
             df['user'] = df[mapped_cols['user']].astype(str)
         else:
             df['user'] = "system_user"
-            warnings.append("default user assigned")
 
         # IP Normalization
         if 'ip' in mapped_cols:
             df['ip'] = df[mapped_cols['ip']].astype(str)
         else:
             df['ip'] = "127.0.0.1"
-            warnings.append("default local IP assigned")
 
+        # Fill missing values
         final_df = df[['timestamp', 'event', 'user', 'ip']].copy()
+        final_df = final_df.fillna("unknown")
 
-        if warnings:
-            msg = f"Successfully parsed {len(final_df)} records. Note: {', '.join(warnings)}."
-        else:
-            msg = f"Successfully mapped columns from dataset across {len(final_df)} records."
+        return final_df
 
-        return True, final_df, msg
-
-    except Exception as e:
-        return False, pd.DataFrame(), f"Failed to parse log file: {str(e)}"
+    except Exception:
+        return fallback_df
 
 
-def extract_log_summary(df):
+def extract_log_summary(df: pd.DataFrame) -> Dict[str, Any]:
     """
     Extracts summary telemetry from normalized DataFrame for agent processing.
     """
@@ -138,8 +131,8 @@ def extract_log_summary(df):
         }
 
     return {
-        "total_events": len(df),
-        "unique_users": df['user'].unique().tolist() if 'user' in df.columns else [],
-        "unique_ips": df['ip'].unique().tolist() if 'ip' in df.columns else [],
+        "total_events": int(len(df)),
+        "unique_users": df['user'].dropna().unique().tolist() if 'user' in df.columns else [],
+        "unique_ips": df['ip'].dropna().unique().tolist() if 'ip' in df.columns else [],
         "sample_events": df.head(10).to_dict(orient='records') if not df.empty else []
     }
