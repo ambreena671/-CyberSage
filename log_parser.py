@@ -46,7 +46,6 @@ def parse_logs(file_or_path):
             return False, df, "The uploaded dataset is empty."
 
         # Clean Column Headers (lowercase and stripped)
-        original_cols = list(df.columns)
         df.columns = [str(col).strip().lower().replace(' ', '_').replace('-', '_') for col in df.columns]
 
         # Dynamic Mapping Engine
@@ -66,17 +65,16 @@ def parse_logs(file_or_path):
             df['timestamp'] = df[mapped_cols['timestamp']]
         else:
             df['timestamp'] = [datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") for _ in range(len(df))]
-            warnings.append("timestamps were generated automatically")
+            warnings.append("timestamps auto-filled")
 
-        # 2. Event Fallback (Synthesizes textual context from non-standard columns)
+        # 2. Event Fallback
         if 'event' in mapped_cols:
             df['event'] = df[mapped_cols['event']].astype(str)
         else:
-            # Aggregate string columns into a single event summary string
             string_cols = df.select_dtypes(include=['object']).columns.tolist()
             if string_cols:
                 df['event'] = df[string_cols].astype(str).agg(' | '.join, axis=1)
-                warnings.append("event activity was constructed from available text fields")
+                warnings.append("event created from text columns")
             else:
                 df['event'] = "System Activity Recorded"
                 warnings.append("default event category applied")
@@ -95,10 +93,9 @@ def parse_logs(file_or_path):
             df['ip'] = "127.0.0.1"
             warnings.append("default local IP assigned")
 
-        # Keep normalized schema
+        # Select standard schema
         final_df = df[['timestamp', 'event', 'user', 'ip']].copy()
 
-        # Format Warning Message
         if warnings:
             msg = f"Successfully parsed {len(final_df)} records. Note: {', '.join(warnings)}."
         else:
@@ -108,3 +105,23 @@ def parse_logs(file_or_path):
 
     except Exception as e:
         return False, pd.DataFrame(), f"Failed to parse log file: {str(e)}"
+
+
+def extract_log_summary(df):
+    """
+    Extracts summary telemetry from normalized DataFrame for agent processing.
+    """
+    if df is None or df.empty:
+        return {
+            "total_events": 0,
+            "unique_users": [],
+            "unique_ips": [],
+            "sample_events": []
+        }
+
+    return {
+        "total_events": len(df),
+        "unique_users": df['user'].unique().tolist() if 'user' in df.columns else [],
+        "unique_ips": df['ip'].unique().tolist() if 'ip' in df.columns else [],
+        "sample_events": df.head(10).to_dict(orient='records') if not df.empty else []
+    }
