@@ -1,61 +1,97 @@
 """
 CyberSage - Log Parser Module
-Handles parsing CSV/TXT files and generating summary statistics.
+Handles parsing, normalization, validation, flexible column mapping, and structure extraction from CSV and TXT logs.
 """
 
 import pandas as pd
-from typing import Dict, Any, Union, Tuple
+import io
+from typing import Tuple, List, Dict, Any
 
-def parse_logs(file_or_path: Union[str, Any]) -> pd.DataFrame:
-    """Parses uploaded file objects or file paths into a structured DataFrame."""
+REQUIRED_COLUMNS = {'timestamp', 'event', 'user', 'ip'}
+
+# Mapping dictionary for common log header variations across different SIEMs and datasets
+COLUMN_MAPPING = {
+    'time': 'timestamp',
+    'datetime': 'timestamp',
+    'date': 'timestamp',
+    'action': 'event',
+    'activity': 'event',
+    'description': 'event',
+    'log_event': 'event',
+    'username': 'user',
+    'userid': 'user',
+    'account': 'user',
+    'src_ip': 'ip',
+    'srcip': 'ip',
+    'ip_address': 'ip',
+    'client_ip': 'ip',
+    'source_ip': 'ip'
+}
+
+def parse_logs(file_data: Any, filename: str = "") -> Tuple[bool, pd.DataFrame, str]:
+    """
+    Parses CSV or TXT log content into a normalized pandas DataFrame.
+    Automatically maps common column headers to expected schema (timestamp, event, user, ip).
+    Returns: (success: bool, dataframe: pd.DataFrame, message: str)
+    """
     try:
-        if isinstance(file_or_path, pd.DataFrame):
-            return file_or_path
+        if isinstance(file_data, pd.DataFrame):
+            df = file_data.copy()
+        elif isinstance(file_data, str):
+            df = pd.read_csv(io.StringIO(file_data))
+        elif hasattr(file_data, 'read'):
+            content = file_data.read()
+            if isinstance(content, bytes):
+                content = content.decode('utf-8', errors='ignore')
+            df = pd.read_csv(io.StringIO(content))
+        else:
+            return False, pd.DataFrame(), "Unsupported file payload format."
 
-        df = pd.read_csv(file_or_path)
+        # Normalize column names (lowercase & strip spaces)
+        df.columns = df.columns.astype(str).str.strip().str.lower()
         
-        # Standardize column names
-        df.columns = [str(col).strip().lower() for col in df.columns]
+        # Rename common header variations to expected standard headers
+        df = df.rename(columns=COLUMN_MAPPING)
         
-        # Rename common aliases
-        col_map = {
-            'time': 'timestamp',
-            'date': 'timestamp',
-            'username': 'user',
-            'src_ip': 'ip',
-            'source_ip': 'ip',
-            'ip_address': 'ip',
-            'action': 'event',
-            'activity': 'event'
-        }
-        df.rename(columns=col_map, inplace=True)
+        # Check for required columns
+        missing = REQUIRED_COLUMNS - set(df.columns)
+        if missing:
+            return False, pd.DataFrame(), f"Missing required columns in log file: {', '.join(missing)}"
+
+        # Strip spaces from string values
+        for col in ['event', 'user', 'ip', 'timestamp']:
+            if col in df.columns:
+                df[col] = df[col].astype(str).str.strip()
         
-        # Ensure required columns exist
-        for req_col in ['timestamp', 'event', 'user', 'ip']:
-            if req_col not in df.columns:
-                df[req_col] = "Unknown"
-                
-        return df
+        if df.empty:
+            return False, pd.DataFrame(), "The provided log dataset is empty."
+
+        return True, df, f"Successfully parsed {len(df)} log records."
+
     except Exception as e:
-        print(f"Parsing error: {e}")
-        return pd.DataFrame()
-
+        return False, pd.DataFrame(), f"Log parsing error: {str(e)}"
 
 def extract_log_summary(df: pd.DataFrame) -> Dict[str, Any]:
-    """Extracts high-level summary metadata from parsed logs."""
+    """Extracts high-level security metrics from parsed logs."""
     if df.empty:
         return {
             "total_events": 0,
             "unique_users": 0,
+            "users_list": [],
             "unique_ips": 0,
-            "start_time": "N/A",
-            "end_time": "N/A"
+            "ips_list": [],
+            "event_types": {},
+            "timeline_start": "N/A",
+            "timeline_end": "N/A"
         }
-
+        
     return {
         "total_events": len(df),
-        "unique_users": int(df['user'].nunique()) if 'user' in df.columns else 0,
-        "unique_ips": int(df['ip'].nunique()) if 'ip' in df.columns else 0,
-        "start_time": str(df['timestamp'].iloc[0]) if 'timestamp' in df.columns and not df.empty else "N/A",
-        "end_time": str(df['timestamp'].iloc[-1]) if 'timestamp' in df.columns and not df.empty else "N/A"
+        "unique_users": df['user'].nunique(),
+        "users_list": df['user'].unique().tolist(),
+        "unique_ips": df['ip'].nunique(),
+        "ips_list": df['ip'].unique().tolist(),
+        "event_types": df['event'].value_counts().to_dict(),
+        "timeline_start": df['timestamp'].iloc[0] if not df.empty else "N/A",
+        "timeline_end": df['timestamp'].iloc[-1] if not df.empty else "N/A"
     }
