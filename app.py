@@ -138,21 +138,30 @@ with st.sidebar:
     else:
         uploaded_file = st.file_uploader("Upload CSV or TXT Log", type=["csv", "txt"])
         if uploaded_file is not None:
-            df_parsed = parse_logs(uploaded_file)
-            
-            if df_parsed.empty:
-                parse_error = "Could not parse data or uploaded log file is empty."
+            try:
+                parsed_res = parse_logs(uploaded_file)
+                # Flexible handling for both single DF and (success, DF, msg) returns
+                if isinstance(parsed_res, tuple):
+                    df_parsed = parsed_res[1]
+                else:
+                    df_parsed = parsed_res
+
+                if df_parsed is None or (isinstance(df_parsed, pd.DataFrame) and df_parsed.empty):
+                    parse_error = "Could not parse log data or uploaded file is empty."
+                    can_proceed = False
+                else:
+                    file_to_investigate = df_parsed
+                    can_proceed = True
+            except Exception as e:
+                parse_error = f"Error during parsing: {str(e)}"
                 can_proceed = False
-            else:
-                file_to_investigate = df_parsed
-                can_proceed = True
 
     st.markdown("---")
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        start_btn = st.button("🚀 Investigate", width='stretch', type="primary", disabled=not can_proceed)
+        start_btn = st.button("🚀 Investigate", use_container_width=True, type="primary", disabled=not can_proceed)
     with col_btn2:
-        clear_btn = st.button("🔄 Reset", width='stretch')
+        clear_btn = st.button("🔄 Reset", use_container_width=True)
 
     if clear_btn:
         st.session_state.investigation_result = None
@@ -316,15 +325,7 @@ else:
             df_entities = pd.DataFrame(table_rows)
             st.dataframe(
                 df_entities,
-                column_config={
-                    "Risk Score": st.column_config.ProgressColumn(
-                        "Risk Score",
-                        format="%d",
-                        min_value=0,
-                        max_value=100
-                    )
-                },
-                width='stretch',
+                use_container_width=True,
                 hide_index=True
             )
         else:
@@ -337,7 +338,7 @@ else:
         df_events = pd.DataFrame(raw_events)
         st.dataframe(
             df_events,
-            width='stretch',
+            use_container_width=True,
             hide_index=True
         )
 
@@ -359,7 +360,7 @@ else:
             data=report_text,
             file_name="CyberSage_Incident_Report.txt",
             mime="text/plain",
-            width='stretch'
+            use_container_width=True
         )
         with st.expander("Preview Raw Report Text", expanded=False):
             st.code(report_text, language="text")
