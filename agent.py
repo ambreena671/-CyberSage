@@ -67,12 +67,18 @@ class CyberSageAgent:
 
         # Step 3: Correlate events & classify attack (Python Engine)
         corr_results = correlate_events(df, suspicious)
-        self.state["correlations"] = corr_results["correlations"]
-        self.state["classified_attack"] = corr_results["classified_attack"]
-        self.state["confidence"] = corr_results["confidence"]
-        self.state["affected_users"] = corr_results["affected_users"]
-        self.state["involved_ips"] = corr_results["involved_ips"]
-        self.state["event_sequence"] = " ➔ ".join(df['event'].tolist())
+        self.state["correlations"] = corr_results.get("correlations", [])
+        self.state["classified_attack"] = corr_results.get("classified_attack", "Unclassified Activity")
+        self.state["confidence"] = corr_results.get("confidence", "Low")
+        self.state["affected_users"] = corr_results.get("affected_users", [])
+        self.state["involved_ips"] = corr_results.get("involved_ips", [])
+        
+        # Limit event sequence preview to avoid memory allocation issues on large datasets
+        event_samples = df['event'].head(20).astype(str).tolist()
+        self.state["event_sequence"] = " ➔ ".join(event_samples)
+        if len(df) > 20:
+            self.state["event_sequence"] += f" ... (+{len(df) - 20} more events)"
+            
         self.state["steps_completed"].append("✓ Event correlation complete")
 
         # Step 4: Map to MITRE ATT&CK Framework
@@ -82,10 +88,10 @@ class CyberSageAgent:
 
         # Step 5: Deterministic Risk Calculation
         risk_results = calculate_risk(df, suspicious)
-        self.state["risk_score"] = risk_results["risk_score"]
-        self.state["risk_level"] = risk_results["risk_level"]
-        self.state["risk_color"] = risk_results["risk_color"]
-        self.state["risk_factors"] = risk_results["risk_factors"]
+        self.state["risk_score"] = risk_results.get("risk_score", 0)
+        self.state["risk_level"] = risk_results.get("risk_level", "LOW")
+        self.state["risk_color"] = risk_results.get("risk_color", "#66bb6a")
+        self.state["risk_factors"] = risk_results.get("risk_factors", [])
         self.state["steps_completed"].append("✓ Risk score computed")
 
         # Step 6: Generative AI Executive Narrative
