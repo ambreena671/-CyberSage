@@ -1,7 +1,7 @@
 """
 CyberSage - Streamlit SOC Incident Dashboard UI
 Custom dark-themed cybersecurity interface displaying investigation steps, risk cards, 
-attack flows, evidence timelines, and downloadable reports.
+attack flows, evidence timelines, entity breakdowns, and downloadable reports.
 """
 
 import streamlit as st
@@ -21,27 +21,34 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Pure Black Sidebar, Cyber Dark Dashboard & Green Text Accent
+# Custom CSS for Cyber Dark Theme & High Contrast Green Accents
 CUSTOM_CSS = """
 <style>
-    /* Main Dashboard Background (Dark Cyber Tone) */
+    /* Main Dashboard Background */
     .stApp {
         background-color: #0a0e14 !important;
         color: #00ff66 !important;
     }
 
-    /* Sidebar Background (Pure Dark Black) */
+    /* Sidebar Background & Border */
     [data-testid="stSidebar"] {
         background-color: #000000 !important;
         border-right: 2px solid #00ff66 !important;
     }
 
-    /* Green Text Enforcement Across Dashboard and Sidebar */
+    /* General Typography */
     h1, h2, h3, h4, h5, h6, p, label, span, div, small, b, strong, caption {
         color: #00ff66 !important;
     }
 
-    /* Primary Investigate Button (Green Accent on Black) */
+    /* Streamlit Widget Text Fixes (Radio, Selectbox, Inputs) */
+    div[data-baseweb="select"] > div, div[data-baseweb="base-input"] {
+        background-color: #000000 !important;
+        color: #00ff66 !important;
+        border: 1px solid #00ff66 !important;
+    }
+    
+    /* Primary Investigate Button */
     .stButton > button[kind="primary"] {
         background-color: #000000 !important;
         color: #00ff66 !important;
@@ -57,7 +64,7 @@ CUSTOM_CSS = """
         box-shadow: 0 0 15px rgba(0, 255, 102, 0.9) !important;
     }
 
-    /* Metric Cards (Black Card Background with Neon Green Accent) */
+    /* Metric Cards Styling */
     [data-testid="stMetricValue"] {
         color: #00ff66 !important;
         font-weight: 800;
@@ -69,7 +76,7 @@ CUSTOM_CSS = """
         padding: 14px;
     }
 
-    /* Attack Flow Cards */
+    /* Custom Attack Flow Cards */
     .flow-card {
         background-color: #000000 !important;
         border: 2px solid #00ff66 !important;
@@ -81,10 +88,17 @@ CUSTOM_CSS = """
         box-shadow: 0 4px 10px rgba(0,255,102,0.2);
     }
 
-    /* DataFrame Tables & Input Containers */
+    /* DataFrame & Table Borders */
     [data-testid="stTable"], .stDataFrame {
         background-color: #000000 !important;
         border: 1px solid #00ff66 !important;
+    }
+    
+    /* Expander Container Borders */
+    .streamlit-expanderHeader {
+        background-color: #000000 !important;
+        border: 1px solid #00ff66 !important;
+        border-radius: 5px;
     }
 </style>
 """
@@ -130,7 +144,6 @@ with st.sidebar:
     else:
         uploaded_file = st.file_uploader("Upload CSV or TXT Log", type=["csv", "txt"])
         if uploaded_file is not None:
-            # Parse & validate schema using log_parser gracefully
             success, df_parsed, parse_msg = parse_logs(uploaded_file)
             
             if not success:
@@ -153,13 +166,13 @@ with st.sidebar:
         st.session_state.investigation_result = None
         st.rerun()
 
-# Display Parsing Validation Feedback directly under Title
+# Dashboard Title & Parsing Alerts
 st.title("🛡️ CYBERSAGE Dashboard")
 st.caption("Autonomous Incident Analysis, Deterministic Scoring & Generative Intelligence")
 
 if parse_error:
     st.error(f"❌ **Log Parsing Error:** {parse_error}")
-    st.info("💡 **Format Guidance:** Upload a CSV or TXT file with entries containing headers like `timestamp`, `event`, `user`, and `ip` (or standard SIEM variations).")
+    st.info("💡 **Format Guidance:** Upload CSV/TXT files containing headers like `timestamp`, `event`, `user`, and `ip`.")
 
 if parse_warning:
     st.warning(f"⚠️ **Schema Auto-Correction:** {parse_warning}")
@@ -184,24 +197,22 @@ if start_btn:
 if res is None:
     st.info("👈 Select a Demo Incident or upload log files in the sidebar, then click **Investigate** to start.")
     
-    # Placeholder preview grid
-    st.subheader("📋 System Ready")
+    st.subheader("📋 System Capabilities")
     st.markdown("""
-    **CyberSage Capabilities:**
-    - 🔍 **Log Normalization**: Parses standard CSV/TXT auth and system logs.
-    - ⚡ **Deterministic Engine**: Computes exact risk scores & flags anomalies via Python.
-    - 🗺️ **MITRE ATT&CK Mapping**: Maps behavioral indicators to verified technique IDs.
-    - 🤖 **Agentic Reasoning**: Multi-step sequential state progression.
-    - 📊 **Executive Attack Narrative**: AI-generated threat storytelling & incident reporting.
+    - 🔍 **Log Normalization**: Parses standard CSV/TXT authentication and system logs.
+    - ⚡ **Deterministic Risk Engine**: Computes entity-level & global risk scores via Python logic.
+    - 🗺️ **MITRE ATT&CK Mapping**: Correlates suspicious behaviors directly to MITRE TTPs.
+    - 🤖 **Agentic Reasoning**: Multi-step automated threat investigation pipeline.
+    - 📊 **Executive Attack Narrative**: AI-generated incident reports and mitigation playbooks.
     """)
 else:
-    # 1. Incident Overview Cards
+    # 1. Incident Overview Metrics
     st.markdown("---")
     st.subheader("🚨 Incident Overview")
     
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
-        st.metric("Risk Score", f"{res.get('risk_score', 0)} / 100")
+        st.metric("Global Risk Score", f"{res.get('risk_score', 0)} / 100")
     with c2:
         st.metric("Severity Level", res.get('risk_level', 'N/A'))
     with c3:
@@ -214,9 +225,9 @@ else:
     # 2. Agent Workflow Execution Progress
     with st.expander("🤖 Agentic Investigation Steps Completed", expanded=False):
         for step in res.get('steps_completed', []):
-            st.write(step)
+            st.write(f"✓ {step}")
 
-    # 3. Incident Story & Classification
+    # 3. Incident Story & Primary Threat Vector
     st.markdown("---")
     col_story, col_summary = st.columns([2, 1])
 
@@ -228,15 +239,16 @@ else:
         st.subheader("🎯 Primary Threat")
         st.warning(f"**Classified Vector:**\n{res.get('classified_attack', 'Unclassified')}")
         st.write(f"**Affected User(s):** {', '.join(res.get('affected_users', []))}")
-        st.write(f"**Involved IP Address(es):** {', '.join(res.get('involved_ips', []))}")
+        st.write(f"**Involved IP(s):** {', '.join(res.get('involved_ips', []))}")
 
-    # 4. Dynamic Visual Attack Flow
+    # 4. Visual Attack Flow Sequence
     st.markdown("---")
     st.subheader("🎯 Visual Attack Flow")
 
     raw_events = res.get('raw_events', [])
     if raw_events:
-        flow_cols = st.columns(min(len(raw_events), 6))
+        display_events = raw_events[:6]
+        flow_cols = st.columns(len(display_events))
         
         icon_map = {
             "login": "🔑",
@@ -250,7 +262,7 @@ else:
             "settings": "⚙️"
         }
 
-        for idx, ev in enumerate(raw_events[:6]):
+        for idx, ev in enumerate(display_events):
             ev_name = str(ev.get('event', 'Event'))
             icon = "⚡"
             for k, v in icon_map.items():
@@ -272,35 +284,66 @@ else:
                     unsafe_allow_html=True
                 )
 
-    # 5. MITRE ATT&CK & Risk Factors
+    # 5. MITRE ATT&CK & Entity Breakdown Tabs
     st.markdown("---")
-    col_mitre, col_risk = st.columns([1, 1])
+    tab1, tab2 = st.tabs(["🧩 MITRE ATT&CK & Risk Rules", "👤 Per-User Risk Breakdown"])
 
-    with col_mitre:
-        st.subheader("🧩 MITRE ATT&CK Mappings")
-        mitre_list = res.get('mitre_techniques', [])
-        if mitre_list:
-            for m in mitre_list:
-                st.markdown(f"**[{m.get('id', 'N/A')}] {m.get('name', 'N/A')}** - *{m.get('tactic', 'N/A')}*")
-                st.caption(f"Reason: {m.get('reason', '')}")
-                st.caption(m.get('description', ''))
-                st.markdown("---")
+    with tab1:
+        col_mitre, col_risk = st.columns([1, 1])
+        with col_mitre:
+            st.subheader("MITRE ATT&CK Mappings")
+            mitre_list = res.get('mitre_techniques', [])
+            if mitre_list:
+                for m in mitre_list:
+                    st.markdown(f"**[{m.get('id', 'N/A')}] {m.get('name', 'N/A')}** - *{m.get('tactic', 'N/A')}*")
+                    st.caption(f"Reason: {m.get('reason', '')}")
+                    st.caption(m.get('description', ''))
+                    st.markdown("---")
+            else:
+                st.write("No direct MITRE ATT&CK techniques matched.")
+
+        with col_risk:
+            st.subheader("Risk Factors & Scoring")
+            score = res.get('risk_score', 0)
+            st.progress(min(max(score / 100.0, 0.0), 1.0))
+            st.write(f"**Overall Severity:** {res.get('risk_level', 'N/A')}")
+            st.markdown("**Triggered Risk Rules:**")
+            for factor in res.get('risk_factors', []):
+                st.write(f"• {factor}")
+
+    with tab2:
+        st.subheader("Entity-Level Risk Analysis")
+        entity_data = res.get('entities', {})
+        if entity_data:
+            table_rows = []
+            for user, details in entity_data.items():
+                table_rows.append({
+                    "User / Entity": user,
+                    "Risk Score": details.get("risk_score", 0),
+                    "Severity": details.get("risk_level", "LOW"),
+                    "Triggered Factors": ", ".join(details.get("risk_factors", [])) or "None (Normal Behavior)"
+                })
+            
+            df_entities = pd.DataFrame(table_rows)
+            st.dataframe(
+                df_entities,
+                column_config={
+                    "Risk Score": st.column_config.ProgressColumn(
+                        "Risk Score",
+                        format="%d",
+                        min_value=0,
+                        max_value=100
+                    )
+                },
+                use_container_width=True,
+                hide_index=True
+            )
         else:
-            st.write("No direct MITRE ATT&CK techniques matched.")
+            st.info("No entity-level breakdown available for this log set.")
 
-    with col_risk:
-        st.subheader("⚠️ Risk Analysis & Factors")
-        score = res.get('risk_score', 0)
-        st.progress(min(max(score / 100.0, 0.0), 1.0))
-        st.write(f"**Risk Severity:** {res.get('risk_level', 'N/A')}")
-        st.markdown("**Deterministic Factors:**")
-        for factor in res.get('risk_factors', []):
-            st.write(f"• {factor}")
-
-    # 6. Evidence Timeline
+    # 6. Evidence Timeline Table
     st.markdown("---")
     st.subheader("🕒 Evidence Timeline")
-    
     if raw_events:
         df_events = pd.DataFrame(raw_events)
         st.dataframe(
