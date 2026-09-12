@@ -1,6 +1,6 @@
 """
 CyberSage - Deterministic Pattern Detector
-Rule-based logic to detect suspicious cyber behavior and high-risk events.
+Rule-based logic to detect suspicious cyber behavior and high-risk events across standard and custom security datasets.
 """
 
 import pandas as pd
@@ -8,19 +8,14 @@ from typing import List, Dict, Any
 
 REQUIRED_COLUMNS = {'event', 'timestamp', 'user', 'ip'}
 
-SUSPICIOUS_KEYWORDS = [
-    'failed', 'admin', 'sensitive', 'large data', 'malicious',
-    'suspicious', 'database', 'changed', 'settings', 'multiple'
-]
-
 def detect_suspicious_patterns(df: pd.DataFrame) -> List[Dict[str, Any]]:
     """
-    Scans parsed logs and identifies suspicious events based on security rules.
+    Scans parsed logs and identifies suspicious events based on broad security rules.
     """
     if df.empty:
         return []
 
-    # Validate schema
+    # Validate required columns
     missing_cols = REQUIRED_COLUMNS - set(df.columns)
     if missing_cols:
         raise KeyError(f"DataFrame is missing required columns: {missing_cols}")
@@ -31,20 +26,29 @@ def detect_suspicious_patterns(df: pd.DataFrame) -> List[Dict[str, Any]]:
         event_str = str(row['event']).lower()
         reasons = []
 
-        if 'failed login' in event_str or 'failed authentication' in event_str:
-            reasons.append("Failed authentication attempt")
-        if 'admin' in event_str:
+        # 1. Authentication & Access Failures
+        if any(term in event_str for term in ['failed', 'denied', 'unauthorized', 'invalid', 'error', '401', '403', 'refused']):
+            reasons.append("Authentication or access permission failure")
+
+        # 2. Administrative & Privilege Activity
+        if any(term in event_str for term in ['admin', 'root', 'sudo', 'privileged', 'system_user']):
             reasons.append("Privileged administrative resource interaction")
-        if 'sensitive' in event_str:
-            reasons.append("High-value sensitive resource access")
-        if 'large data' in event_str:
-            reasons.append("Potential data exfiltration volume detected")
-        if 'malicious' in event_str or 'suspicious' in event_str:
-            reasons.append("Pre-identified threat/phishing indicator")
-        if 'database' in event_str:
-            reasons.append("Direct database access attempt")
-        if 'settings changed' in event_str or 'setting changed' in event_str:
-            reasons.append("Account persistence or security configuration change")
+
+        # 3. Data Access & Bulk Operations
+        if any(term in event_str for term in ['sensitive', 'database', 'exfiltration', 'dump', 'large data', 'export', 'download']):
+            reasons.append("High-value data access or potential bulk extraction")
+
+        # 4. Explicit Threat & Malware Indicators
+        if any(term in event_str for term in ['malicious', 'suspicious', 'phishing', 'attack', 'exploit', 'injection', 'dos', 'ddos', 'trojan', 'botnet']):
+            reasons.append("Pre-identified threat indicator or attack payload")
+
+        # 5. System Modification & Configuration Changes
+        if any(term in event_str for term in ['setting changed', 'settings changed', 'config', 'modified', 'deleted', 'cleared logs']):
+            reasons.append("Account persistence or security configuration alteration")
+
+        # 6. Numeric/Categorical Attack Flags (Kaggle / Security Datasets)
+        if any(term in event_str.split(' | ') for term in ['1', '1.0', 'true', 'anomaly', 'attack']):
+            reasons.append("Dataset column flagged positive threat detection indicator")
 
         if reasons:
             suspicious_events.append({
