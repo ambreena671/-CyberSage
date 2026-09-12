@@ -119,7 +119,6 @@ with st.sidebar:
     input_mode = st.radio("Select Input Data:", ["Demo Incident", "Upload Log File"])
 
     file_to_investigate = None
-    parse_warning = None
     parse_error = None
     can_proceed = False
 
@@ -132,35 +131,28 @@ with st.sidebar:
                 "Scenario 3 — Suspicious Data Access"
             ]
         )
-        if "Scenario 1" in demo_choice:
-            file_to_investigate = get_demo_data(1)
-        elif "Scenario 2" in demo_choice:
-            file_to_investigate = get_demo_data(2)
-        else:
-            file_to_investigate = get_demo_data(3)
-        
+        scenario_id = 1 if "Scenario 1" in demo_choice else (2 if "Scenario 2" in demo_choice else 3)
+        file_to_investigate = get_demo_data(scenario_id)
         can_proceed = True
 
     else:
         uploaded_file = st.file_uploader("Upload CSV or TXT Log", type=["csv", "txt"])
         if uploaded_file is not None:
-            success, df_parsed, parse_msg = parse_logs(uploaded_file)
+            df_parsed = parse_logs(uploaded_file)
             
-            if not success:
-                parse_error = parse_msg
+            if df_parsed.empty:
+                parse_error = "Could not parse data or uploaded log file is empty."
                 can_proceed = False
             else:
                 file_to_investigate = df_parsed
                 can_proceed = True
-                if "Note:" in parse_msg or "auto-filled" in parse_msg:
-                    parse_warning = parse_msg
 
     st.markdown("---")
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        start_btn = st.button("🚀 Investigate", use_container_width=True, type="primary", disabled=not can_proceed)
+        start_btn = st.button("🚀 Investigate", width='stretch', type="primary", disabled=not can_proceed)
     with col_btn2:
-        clear_btn = st.button("🔄 Reset", use_container_width=True)
+        clear_btn = st.button("🔄 Reset", width='stretch')
 
     if clear_btn:
         st.session_state.investigation_result = None
@@ -173,9 +165,6 @@ st.caption("Autonomous Incident Analysis, Deterministic Scoring & Generative Int
 if parse_error:
     st.error(f"❌ **Log Parsing Error:** {parse_error}")
     st.info("💡 **Format Guidance:** Upload CSV/TXT files containing headers like `timestamp`, `event`, `user`, and `ip`.")
-
-if parse_warning:
-    st.warning(f"⚠️ **Schema Auto-Correction:** {parse_warning}")
 
 res = st.session_state.investigation_result
 
@@ -335,7 +324,7 @@ else:
                         max_value=100
                     )
                 },
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
         else:
@@ -348,7 +337,7 @@ else:
         df_events = pd.DataFrame(raw_events)
         st.dataframe(
             df_events,
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 
@@ -370,7 +359,7 @@ else:
             data=report_text,
             file_name="CyberSage_Incident_Report.txt",
             mime="text/plain",
-            use_container_width=True
+            width='stretch'
         )
         with st.expander("Preview Raw Report Text", expanded=False):
             st.code(report_text, language="text")
