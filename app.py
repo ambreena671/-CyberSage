@@ -41,14 +41,14 @@ CUSTOM_CSS = """
         color: #00ff66 !important;
     }
 
-    /* Streamlit Widget Text Fixes (Radio, Selectbox, Inputs) */
+    /* Streamlit Widget Text Fixes */
     div[data-baseweb="select"] > div, div[data-baseweb="base-input"] {
         background-color: #000000 !important;
         color: #00ff66 !important;
         border: 1px solid #00ff66 !important;
     }
     
-    /* Primary Investigate Button */
+    /* Primary Button */
     .stButton > button[kind="primary"] {
         background-color: #000000 !important;
         color: #00ff66 !important;
@@ -64,7 +64,7 @@ CUSTOM_CSS = """
         box-shadow: 0 0 15px rgba(0, 255, 102, 0.9) !important;
     }
 
-    /* Metric Cards Styling */
+    /* Metric Cards */
     [data-testid="stMetricValue"] {
         color: #00ff66 !important;
         font-weight: 800;
@@ -76,7 +76,7 @@ CUSTOM_CSS = """
         padding: 14px;
     }
 
-    /* Custom Attack Flow Cards */
+    /* Custom Flow Cards */
     .flow-card {
         background-color: #000000 !important;
         border: 2px solid #00ff66 !important;
@@ -88,13 +88,12 @@ CUSTOM_CSS = """
         box-shadow: 0 4px 10px rgba(0,255,102,0.2);
     }
 
-    /* DataFrame & Table Borders */
+    /* Table Styling */
     [data-testid="stTable"], .stDataFrame {
         background-color: #000000 !important;
         border: 1px solid #00ff66 !important;
     }
     
-    /* Expander Container Borders */
     .streamlit-expanderHeader {
         background-color: #000000 !important;
         border: 1px solid #00ff66 !important;
@@ -140,7 +139,6 @@ with st.sidebar:
         if uploaded_file is not None:
             try:
                 parsed_res = parse_logs(uploaded_file)
-                # Flexible handling for both single DF and (success, DF, msg) returns
                 if isinstance(parsed_res, tuple):
                     df_parsed = parsed_res[1]
                 else:
@@ -159,15 +157,15 @@ with st.sidebar:
     st.markdown("---")
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        start_btn = st.button("🚀 Investigate", use_container_width=True, type="primary", disabled=not can_proceed)
+        start_btn = st.button("🚀 Investigate", width='stretch', type="primary", disabled=not can_proceed)
     with col_btn2:
-        clear_btn = st.button("🔄 Reset", use_container_width=True)
+        clear_btn = st.button("🔄 Reset", width='stretch')
 
     if clear_btn:
         st.session_state.investigation_result = None
         st.rerun()
 
-# Dashboard Title & Parsing Alerts
+# Dashboard Title
 st.title("🛡️ CYBERSAGE Dashboard")
 st.caption("Autonomous Incident Analysis, Deterministic Scoring & Generative Intelligence")
 
@@ -191,7 +189,7 @@ if start_btn:
     else:
         st.warning("Please upload a log file or select a valid demo scenario.")
 
-# Dashboard Visual Render
+# Dashboard Layout
 if res is None:
     st.info("👈 Select a Demo Incident or upload log files in the sidebar, then click **Investigate** to start.")
     
@@ -204,7 +202,7 @@ if res is None:
     - 📊 **Executive Attack Narrative**: AI-generated incident reports and mitigation playbooks.
     """)
 else:
-    # 1. Incident Overview Metrics
+    # Incident Metrics
     st.markdown("---")
     st.subheader("🚨 Incident Overview")
     
@@ -220,12 +218,12 @@ else:
     with c5:
         st.metric("Anomalies Flagged", len(res.get('suspicious_events', [])))
 
-    # 2. Agent Workflow Execution Progress
+    # Agent Steps
     with st.expander("🤖 Agentic Investigation Steps Completed", expanded=False):
         for step in res.get('steps_completed', []):
             st.write(f"✓ {step}")
 
-    # 3. Incident Story & Primary Threat Vector
+    # Attack Story & Vector
     st.markdown("---")
     col_story, col_summary = st.columns([2, 1])
 
@@ -239,7 +237,7 @@ else:
         st.write(f"**Affected User(s):** {', '.join(res.get('affected_users', []))}")
         st.write(f"**Involved IP(s):** {', '.join(res.get('involved_ips', []))}")
 
-    # 4. Visual Attack Flow Sequence
+    # Attack Flow
     st.markdown("---")
     st.subheader("🎯 Visual Attack Flow")
 
@@ -282,7 +280,7 @@ else:
                     unsafe_allow_html=True
                 )
 
-    # 5. MITRE ATT&CK & Entity Breakdown Tabs
+    # Tabs
     st.markdown("---")
     tab1, tab2 = st.tabs(["🧩 MITRE ATT&CK & Risk Rules", "👤 Per-User Risk Breakdown"])
 
@@ -325,24 +323,24 @@ else:
             df_entities = pd.DataFrame(table_rows)
             st.dataframe(
                 df_entities,
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
         else:
             st.info("No entity-level breakdown available for this log set.")
 
-    # 6. Evidence Timeline Table
+    # Evidence Timeline
     st.markdown("---")
     st.subheader("🕒 Evidence Timeline")
     if raw_events:
         df_events = pd.DataFrame(raw_events)
         st.dataframe(
             df_events,
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 
-    # 7. Defensive Response Plan & Report Export
+    # Report Export
     st.markdown("---")
     col_resp, col_rep = st.columns([1, 1])
 
@@ -360,7 +358,7 @@ else:
             data=report_text,
             file_name="CyberSage_Incident_Report.txt",
             mime="text/plain",
-            use_container_width=True
+            width='stretch'
         )
         with st.expander("Preview Raw Report Text", expanded=False):
             st.code(report_text, language="text")
