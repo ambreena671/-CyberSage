@@ -14,6 +14,7 @@ from risk_engine import calculate_risk
 from mitre_mapper import map_mitre_techniques
 from report_generator import generate_attack_story, generate_response_plan, build_full_report
 
+
 class CyberSageAgent:
     """Agentic Incident Investigator State Machine."""
 
@@ -94,8 +95,8 @@ class CyberSageAgent:
         self.state["risk_factors"] = risk_results.get("risk_factors", [])
         self.state["steps_completed"].append("✓ Risk score computed")
 
-        # Step 6: Generative AI Executive Narrative
-        story = generate_attack_story(self.state)
+        # Step 6: Generative AI Executive Narrative (Passes state and df)
+        story = generate_attack_story(self.state, df=df)
         self.state["attack_story"] = story
         self.state["steps_completed"].append("✓ Attack story generated")
 
