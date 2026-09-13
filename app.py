@@ -1,7 +1,7 @@
 """
-CyberSage - Streamlit SOC Incident Dashboard UI
-Custom dark-themed cybersecurity interface displaying investigation steps, risk cards, 
-attack flows, evidence timelines, and downloadable reports.
+CyberSage - DFIR & SOC AI Incident Investigator UI
+Custom dark-themed cybersecurity & digital forensics dashboard displaying investigation steps,
+risk cards, attack flows, artifact timelines, entity breakdowns, and downloadable reports.
 """
 
 import streamlit as st
@@ -15,76 +15,297 @@ from log_parser import parse_logs
 
 # Page Configuration
 st.set_page_config(
-    page_title="CyberSage | AI Incident Investigator",
+    page_title="CyberSage | DFIR & SOC Incident Investigator",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Pure Black Sidebar, Cyber Dark Dashboard & Green Text Accent
+# Custom CSS for Premium Dark Dashboard with Enhanced Cybersecurity Aesthetics
 CUSTOM_CSS = """
 <style>
-    /* Main Dashboard Background (Dark Cyber Tone) */
+    /* Main Dashboard Background - Subtle Gradient */
     .stApp {
-        background-color: #0a0e14 !important;
-        color: #00ff66 !important;
+        background: linear-gradient(135deg, #0a0e14 0%, #111820 100%) !important;
+        color: #00dd55 !important;
     }
 
-    /* Sidebar Background (Pure Dark Black) */
+    /* Sidebar Background - Deep Gradient */
     [data-testid="stSidebar"] {
-        background-color: #000000 !important;
-        border-right: 2px solid #00ff66 !important;
+        background: linear-gradient(180deg, #0f1419 0%, #1a1f2a 100%) !important;
+        border-right: 2px solid #00dd55 !important;
     }
 
-    /* Green Text Enforcement Across Dashboard and Sidebar */
-    h1, h2, h3, h4, h5, h6, p, label, span, div, small, b, strong, caption {
-        color: #00ff66 !important;
+    /* Text Hierarchy - Smart Color Usage */
+    h1 {
+        color: #00ff88 !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.5px !important;
+        text-shadow: 0 0 20px rgba(0, 255, 136, 0.3) !important;
     }
 
-    /* Primary Investigate Button (Green Accent on Black) */
+    h2, h3 {
+        color: #00dd55 !important;
+        font-weight: 600 !important;
+        margin-top: 24px !important;
+        margin-bottom: 12px !important;
+    }
+
+    h4, h5, h6 {
+        color: #00cc77 !important;
+        font-weight: 500 !important;
+    }
+
+    p, label, span, div, small, b, strong, caption {
+        color: #b0b8c1 !important;
+    }
+
+    caption, small {
+        color: #7a8592 !important;
+        font-size: 0.85em !important;
+    }
+
+    /* Primary Investigate Button - Modern Style */
     .stButton > button[kind="primary"] {
-        background-color: #000000 !important;
-        color: #00ff66 !important;
-        border: 2px solid #00ff66 !important;
+        background: linear-gradient(135deg, #00dd55 0%, #00bb44 100%) !important;
+        color: #0a0e14 !important;
+        border: none !important;
         border-radius: 8px !important;
-        font-weight: bold !important;
-        box-shadow: 0 0 10px rgba(0, 255, 102, 0.5) !important;
+        font-weight: 700 !important;
+        padding: 10px 24px !important;
+        box-shadow: 0 8px 24px rgba(0, 221, 85, 0.3) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        font-size: 14px !important;
+    }
+
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #00ff88 0%, #00dd55 100%) !important;
+        box-shadow: 0 12px 32px rgba(0, 255, 136, 0.5) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    .stButton > button[kind="primary"]:active {
+        transform: translateY(0) !important;
+    }
+
+    /* Secondary Button */
+    .stButton > button:not([kind="primary"]) {
+        background-color: #1a1f2a !important;
+        color: #00dd55 !important;
+        border: 1px solid #00dd55 !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+        font-weight: 500 !important;
+    }
+
+    .stButton > button:not([kind="primary"]):hover {
+        background-color: #00dd55 !important;
+        color: #0a0e14 !important;
+    }
+
+    /* Metric Cards - Premium Look with Depth */
+    [data-testid="stMetricValue"] {
+        color: #00ff88 !important;
+        font-weight: 800 !important;
+        font-size: 2.2em !important;
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #7a8592 !important;
+        font-size: 0.95em !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    .stMetric {
+        background: linear-gradient(135deg, #0f1419 0%, #1a1f2a 100%) !important;
+        border: 1px solid #1f2d3a !important;
+        border-radius: 12px !important;
+        padding: 20px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(0, 221, 85, 0.1) !important;
         transition: all 0.3s ease !important;
     }
-    .stButton > button[kind="primary"]:hover {
-        background-color: #00ff66 !important;
-        color: #000000 !important;
-        box-shadow: 0 0 15px rgba(0, 255, 102, 0.9) !important;
+
+    .stMetric:hover {
+        border-color: #00dd55 !important;
+        box-shadow: 0 12px 32px rgba(0, 221, 85, 0.2), inset 0 1px 0 rgba(0, 221, 85, 0.2) !important;
     }
 
-    /* Metric Cards (Black Card Background with Neon Green Accent) */
-    [data-testid="stMetricValue"] {
-        color: #00ff66 !important;
-        font-weight: 800;
-    }
-    .stMetric {
-        background-color: #000000 !important;
-        border: 2px solid #00ff66 !important;
-        border-radius: 10px;
-        padding: 14px;
-    }
-
-    /* Attack Flow Cards */
+    /* Attack Flow Cards - Enhanced Styling */
     .flow-card {
-        background-color: #000000 !important;
-        border: 2px solid #00ff66 !important;
-        border-radius: 10px;
-        padding: 15px;
-        margin: 5px;
-        text-align: center;
-        color: #00ff66 !important;
-        box-shadow: 0 4px 10px rgba(0,255,102,0.2);
+        background: linear-gradient(135deg, #0f1419 0%, #1a1f2a 100%) !important;
+        border: 1.5px solid #1f2d3a !important;
+        border-radius: 12px !important;
+        padding: 20px 12px !important;
+        margin: 8px !important;
+        text-align: center !important;
+        color: #00dd55 !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        backdrop-filter: blur(10px) !important;
     }
 
-    /* DataFrame Tables & Input Containers */
+    .flow-card:hover {
+        border-color: #00ff88 !important;
+        box-shadow: 0 12px 32px rgba(0, 255, 136, 0.25) !important;
+        transform: translateY(-4px) !important;
+    }
+
+    .flow-card h3 {
+        font-size: 2.2em !important;
+        margin: 8px 0 !important;
+        color: #00ff88 !important;
+    }
+
+    .flow-card b {
+        color: #00dd55 !important;
+        font-weight: 700 !important;
+    }
+
+    .flow-card small {
+        color: #7a8592 !important;
+        display: block !important;
+        margin: 6px 0 !important;
+    }
+
+    /* DataFrame Tables - Professional Look */
     [data-testid="stTable"], .stDataFrame {
-        background-color: #000000 !important;
-        border: 1px solid #00ff66 !important;
+        background-color: #0f1419 !important;
+        border: 1px solid #1f2d3a !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+    }
+
+    thead th {
+        background-color: #1a1f2a !important;
+        color: #00dd55 !important;
+        font-weight: 700 !important;
+        border-bottom: 2px solid #00dd55 !important;
+        padding: 14px !important;
+    }
+
+    tbody td {
+        border-bottom: 1px solid #1f2d3a !important;
+        padding: 12px 14px !important;
+        color: #b0b8c1 !important;
+    }
+
+    tbody tr:hover {
+        background-color: rgba(0, 221, 85, 0.05) !important;
+    }
+
+    /* Alert Cards - Severity-Based Colors */
+    div.stAlert[data-baseweb="notification"] {
+        background-color: #0f1419 !important;
+        border-left: 4px solid #00dd55 !important;
+        border-radius: 8px !important;
+        padding: 16px !important;
+        color: #b0b8c1 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Error Alert */
+    div.stAlert[data-icon="error"] {
+        border-left-color: #ff4444 !important;
+    }
+
+    /* Warning Alert */
+    div.stAlert[data-icon="warning"] {
+        border-left-color: #ffaa00 !important;
+    }
+
+    /* Success Alert */
+    div.stAlert[data-icon="success"] {
+        border-left-color: #00dd55 !important;
+    }
+
+    /* Info Alert */
+    div.stAlert[data-icon="info"] {
+        border-left-color: #00ccff !important;
+    }
+
+    /* Expander - Premium Styling */
+    details {
+        background-color: #0f1419 !important;
+        border: 1px solid #1f2d3a !important;
+        border-radius: 8px !important;
+        padding: 14px !important;
+        margin: 8px 0 !important;
+    }
+
+    details summary {
+        color: #00dd55 !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+    }
+
+    details summary:hover {
+        color: #00ff88 !important;
+    }
+
+    /* Horizontal Rule */
+    hr {
+        border: none !important;
+        border-top: 1px solid #1f2d3a !important;
+        margin: 24px 0 !important;
+    }
+
+    /* Input Fields */
+    input, select, textarea {
+        background-color: #1a1f2a !important;
+        color: #b0b8c1 !important;
+        border: 1px solid #1f2d3a !important;
+        border-radius: 6px !important;
+        padding: 10px 12px !important;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        border-color: #00dd55 !important;
+        box-shadow: 0 0 0 3px rgba(0, 221, 85, 0.1) !important;
+    }
+
+    /* Sidebar Text */
+    [data-testid="stSidebar"] h1 {
+        color: #00ff88 !important;
+        margin-bottom: 4px !important;
+    }
+
+    [data-testid="stSidebar"] .caption {
+        color: #7a8592 !important;
+    }
+
+    /* Progress Bar */
+    .stProgress > div > div > div {
+        background-color: #00dd55 !important;
+    }
+
+    /* Download Button */
+    .stDownloadButton > button {
+        background: linear-gradient(135deg, #00dd55 0%, #00bb44 100%) !important;
+        color: #0a0e14 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+    }
+
+    .stDownloadButton > button:hover {
+        background: linear-gradient(135deg, #00ff88 0%, #00dd55 100%) !important;
+    }
+
+    /* Code Block */
+    pre {
+        background-color: #0f1419 !important;
+        border: 1px solid #1f2d3a !important;
+        border-radius: 8px !important;
+        padding: 16px !important;
+        color: #00dd55 !important;
+    }
+
+    code {
+        background-color: #1a1f2a !important;
+        color: #00dd55 !important;
+        border-radius: 4px !important;
+        padding: 2px 6px !important;
     }
 </style>
 """
@@ -99,7 +320,7 @@ if "investigation_result" not in st.session_state:
 # Sidebar Configuration
 with st.sidebar:
     st.title("🛡️ CYBERSAGE")
-    st.caption("Agentic AI Cyber Incident Investigator")
+    st.caption("DFIR & SOC Agentic AI Investigator")
     st.markdown("---")
 
     input_mode = st.radio("Select Input Data:", ["Demo Incident", "Upload Log File"])
@@ -129,8 +350,20 @@ with st.sidebar:
 
     else:
         uploaded_file = st.file_uploader("Upload CSV or TXT Log", type=["csv", "txt"])
+        
+        # Explicit Schema Guidance Notice for Judges & Users
+        with st.expander("📋 Required Evidence Schema (DFIR/SOC)", expanded=True):
+            st.markdown("""
+            **Supported Core Columns:**
+            - ⏱️ `timestamp` *(When)* — e.g. `2026-09-13 10:15:00`
+            - 👤 `user` *(Who)* — e.g. `admin`, `j_smith`
+            - 🌐 `ip` *(Where)* — e.g. `192.168.1.100`
+            - ⚡ `event` *(What)* — e.g. `Failed Login`, `Data Exfiltration`
+
+            *Accepts standard SIEM aliases (`src_ip`, `action`, `username`, `time`).*
+            """)
+
         if uploaded_file is not None:
-            # Parse & validate schema using log_parser gracefully
             success, df_parsed, parse_msg = parse_logs(uploaded_file)
             
             if not success:
@@ -145,35 +378,35 @@ with st.sidebar:
     st.markdown("---")
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        start_btn = st.button("🚀 Investigate", use_container_width=True, type="primary", disabled=not can_proceed)
+        start_btn = st.button("🚀 Investigate", width='stretch', type="primary", disabled=not can_proceed)
     with col_btn2:
-        clear_btn = st.button("🔄 Reset", use_container_width=True)
+        clear_btn = st.button("🔄 Reset", width='stretch')
 
     if clear_btn:
         st.session_state.investigation_result = None
         st.rerun()
 
-# Display Parsing Validation Feedback directly under Title
+# Title & Dashboard Header
 st.title("🛡️ CYBERSAGE Dashboard")
-st.caption("Autonomous Incident Analysis, Deterministic Scoring & Generative Intelligence")
+st.caption("DFIR Artifact Reconstruction, SOC Incident Analysis & Generative Forensics")
 
 if parse_error:
     st.error(f"❌ **Log Parsing Error:** {parse_error}")
-    st.info("💡 **Format Guidance:** Upload a CSV or TXT file with entries containing headers like `timestamp`, `event`, `user`, and `ip` (or standard SIEM variations).")
+    st.info("💡 **Required Columns:** Ensure CSV contains `timestamp`, `user`, `ip`, and `event` (or standard aliases).")
 
 if parse_warning:
-    st.warning(f"⚠️ **Schema Auto-Correction:** {parse_warning}")
+    st.warning(f"⚠️ **Schema Notice:** {parse_warning}")
 
 res = st.session_state.investigation_result
 
-# Execution Logic
+# Execution Pipeline
 if start_btn:
     if file_to_investigate is not None:
-        with st.spinner("🤖 CyberSage Agent conducting multi-step investigation..."):
+        with st.spinner("🤖 CyberSage Agent analyzing artifacts & building forensic timeline..."):
             try:
                 res_output = st.session_state.agent.run_investigation(file_to_investigate)
                 st.session_state.investigation_result = res_output
-                st.success("Investigation Complete!")
+                st.success("Analysis Complete!")
                 st.rerun()
             except Exception as e:
                 st.error(f"❌ **Investigation Pipeline Error:** {str(e)}")
@@ -184,15 +417,13 @@ if start_btn:
 if res is None:
     st.info("👈 Select a Demo Incident or upload log files in the sidebar, then click **Investigate** to start.")
     
-    # Placeholder preview grid
-    st.subheader("📋 System Ready")
+    st.subheader("📋 Core Platform Architecture")
     st.markdown("""
-    **CyberSage Capabilities:**
-    - 🔍 **Log Normalization**: Parses standard CSV/TXT auth and system logs.
-    - ⚡ **Deterministic Engine**: Computes exact risk scores & flags anomalies via Python.
-    - 🗺️ **MITRE ATT&CK Mapping**: Maps behavioral indicators to verified technique IDs.
-    - 🤖 **Agentic Reasoning**: Multi-step sequential state progression.
-    - 📊 **Executive Attack Narrative**: AI-generated threat storytelling & incident reporting.
+    - 🔍 **DFIR & SIEM Normalization**: Maps raw CSV/TXT logs to standard forensic schemas.
+    - ⚡ **Deterministic Risk Engine**: Generates mathematically verifiable threat scores.
+    - 🗺️ **MITRE ATT&CK Correlation**: Maps evidence directly to adversary TTPs.
+    - 🤖 **Agentic Incident Reasoning**: Multi-stage autonomous forensic reconstruction.
+    - 📊 **Executive & Technical Narrative**: AI-synthesized root cause & evidence reports.
     """)
 else:
     # 1. Incident Overview Cards
@@ -216,23 +447,27 @@ else:
         for step in res.get('steps_completed', []):
             st.write(step)
 
-    # 3. Incident Story & Classification
+    # 3. Dynamic Narrative & Threat Classification (DFIR + SOC Cleaned)
     st.markdown("---")
     col_story, col_summary = st.columns([2, 1])
 
     with col_story:
-        st.subheader("📖 Executive Attack Narrative")
-        st.info(res.get('attack_story', 'No story generated.'))
+        st.subheader("📖 Incident & Forensic Narrative")
+        narrative_text = res.get('attack_story', 'No narrative generated.')
+        
+        # Ensure clean terminology across SOC and DFIR execution
+        clean_narrative = narrative_text.replace("SOC Security Operations Center", "Incident Response & Forensics Team")
+        st.info(clean_narrative)
 
     with col_summary:
-        st.subheader("🎯 Primary Threat")
-        st.warning(f"**Classified Vector:**\n{res.get('classified_attack', 'Unclassified')}")
-        st.write(f"**Affected User(s):** {', '.join(res.get('affected_users', []))}")
-        st.write(f"**Involved IP Address(es):** {', '.join(res.get('involved_ips', []))}")
+        st.subheader("🎯 Primary Threat Vector")
+        st.warning(f"**Classified Threat:**\n{res.get('classified_attack', 'Unclassified Incident')}")
+        st.write(f"**Affected User(s):** {', '.join(res.get('affected_users', [])) or 'N/A'}")
+        st.write(f"**Involved IP(s):** {', '.join(res.get('involved_ips', [])) or 'N/A'}")
 
     # 4. Dynamic Visual Attack Flow
     st.markdown("---")
-    st.subheader("🎯 Visual Attack Flow")
+    st.subheader("🎯 Reconstructed Attack & Evidence Flow")
 
     raw_events = res.get('raw_events', [])
     if raw_events:
@@ -266,7 +501,7 @@ else:
                         <b>Step {idx+1}</b><br/>
                         <small>{ev.get('timestamp', '')}</small><br/>
                         <b>{ev_name}</b><br/>
-                        <span style="color:#00ff66">{ev.get('user', '')}</span>
+                        <span style="color:#00dd55">{ev.get('user', '')}</span>
                     </div>
                     """, 
                     unsafe_allow_html=True
@@ -289,23 +524,23 @@ else:
             st.write("No direct MITRE ATT&CK techniques matched.")
 
     with col_risk:
-        st.subheader("⚠️ Risk Analysis & Factors")
+        st.subheader("⚠️ Deterministic Risk Analysis")
         score = res.get('risk_score', 0)
         st.progress(min(max(score / 100.0, 0.0), 1.0))
         st.write(f"**Risk Severity:** {res.get('risk_level', 'N/A')}")
-        st.markdown("**Deterministic Factors:**")
+        st.markdown("**Triggered Risk Rules:**")
         for factor in res.get('risk_factors', []):
             st.write(f"• {factor}")
 
     # 6. Evidence Timeline
     st.markdown("---")
-    st.subheader("🕒 Evidence Timeline")
+    st.subheader("🕒 Forensic Evidence Timeline")
     
     if raw_events:
         df_events = pd.DataFrame(raw_events)
         st.dataframe(
             df_events,
-            use_container_width=True,
+            width='stretch',
             hide_index=True
         )
 
@@ -314,20 +549,20 @@ else:
     col_resp, col_rep = st.columns([1, 1])
 
     with col_resp:
-        st.subheader("🛡️ Defensive Response Plan")
+        st.subheader("🛡️ Recommended Mitigation Plan")
         response_plan = res.get('response_plan', [])
         for idx, rec in enumerate(response_plan, 1):
             st.write(f"**{idx}.** {rec}")
 
     with col_rep:
-        st.subheader("📄 Incident Report Export")
+        st.subheader("📄 Export Forensic & Incident Report")
         report_text = res.get('final_report', 'No report available.')
         st.download_button(
             label="📥 Download Full Report (TXT)",
             data=report_text,
             file_name="CyberSage_Incident_Report.txt",
             mime="text/plain",
-            use_container_width=True
+            width='stretch'
         )
         with st.expander("Preview Raw Report Text", expanded=False):
             st.code(report_text, language="text")
