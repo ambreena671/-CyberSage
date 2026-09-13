@@ -21,66 +21,68 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Premium Dark Dashboard with Enhanced Cybersecurity Aesthetics
+# Custom CSS for ForensicIntel-Style Blue/Purple Glowing Dashboard
 CUSTOM_CSS = """
 <style>
-    /* Main Dashboard Background - Subtle Gradient */
+    /* Main Dashboard Background - Deep Navy Gradient */
     .stApp {
-        background: linear-gradient(135deg, #0a0e14 0%, #111820 100%) !important;
-        color: #00dd55 !important;
+        background: linear-gradient(135deg, #0a0e1a 0%, #0f1629 100%) !important;
+        color: #00eeff !important;
     }
 
-    /* Sidebar Background - Deep Gradient */
+    /* Sidebar Background - Deep Navy with Blue Tint */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0f1419 0%, #1a1f2a 100%) !important;
-        border-right: 2px solid #00dd55 !important;
+        background: linear-gradient(180deg, #0a0d15 0%, #11152a 100%) !important;
+        border-right: 2px solid #00ccff !important;
+        box-shadow: inset -10px 0 30px rgba(0, 204, 255, 0.05) !important;
     }
 
-    /* Text Hierarchy - Smart Color Usage */
+    /* Text Hierarchy - Cyan/Blue Color Usage */
     h1 {
-        color: #00ff88 !important;
+        color: #00eeff !important;
         font-weight: 700 !important;
         letter-spacing: 0.5px !important;
-        text-shadow: 0 0 20px rgba(0, 255, 136, 0.3) !important;
+        text-shadow: 0 0 30px rgba(0, 238, 255, 0.4), 0 0 60px rgba(139, 92, 246, 0.2) !important;
     }
 
     h2, h3 {
-        color: #00dd55 !important;
+        color: #00ccff !important;
         font-weight: 600 !important;
         margin-top: 24px !important;
         margin-bottom: 12px !important;
+        text-shadow: 0 0 15px rgba(0, 204, 255, 0.3) !important;
     }
 
     h4, h5, h6 {
-        color: #00cc77 !important;
+        color: #0099ff !important;
         font-weight: 500 !important;
     }
 
     p, label, span, div, small, b, strong, caption {
-        color: #b0b8c1 !important;
+        color: #a8c5dd !important;
     }
 
     caption, small {
-        color: #7a8592 !important;
+        color: #6b8aaa !important;
         font-size: 0.85em !important;
     }
 
-    /* Primary Investigate Button - Modern Style */
+    /* Primary Investigate Button - Glowing Blue Style */
     .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #00dd55 0%, #00bb44 100%) !important;
-        color: #0a0e14 !important;
-        border: none !important;
+        background: linear-gradient(135deg, #00ccff 0%, #0099ff 100%) !important;
+        color: #0a0e1a !important;
+        border: 1px solid #00eeff !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
         padding: 10px 24px !important;
-        box-shadow: 0 8px 24px rgba(0, 221, 85, 0.3) !important;
+        box-shadow: 0 0 20px rgba(0, 204, 255, 0.4), 0 8px 24px rgba(0, 204, 255, 0.2) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         font-size: 14px !important;
     }
 
     .stButton > button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #00ff88 0%, #00dd55 100%) !important;
-        box-shadow: 0 12px 32px rgba(0, 255, 136, 0.5) !important;
+        background: linear-gradient(135deg, #00eeff 0%, #00ccff 100%) !important;
+        box-shadow: 0 0 30px rgba(0, 238, 255, 0.6), 0 12px 32px rgba(0, 204, 255, 0.4) !important;
         transform: translateY(-2px) !important;
     }
 
@@ -90,220 +92,237 @@ CUSTOM_CSS = """
 
     /* Secondary Button */
     .stButton > button:not([kind="primary"]) {
-        background-color: #1a1f2a !important;
-        color: #00dd55 !important;
-        border: 1px solid #00dd55 !important;
+        background-color: rgba(0, 153, 255, 0.1) !important;
+        color: #00ccff !important;
+        border: 1px solid #0099ff !important;
         border-radius: 8px !important;
         transition: all 0.3s ease !important;
         font-weight: 500 !important;
+        box-shadow: 0 0 10px rgba(0, 153, 255, 0.2) !important;
     }
 
     .stButton > button:not([kind="primary"]):hover {
-        background-color: #00dd55 !important;
-        color: #0a0e14 !important;
+        background-color: rgba(0, 204, 255, 0.2) !important;
+        border-color: #00ccff !important;
+        box-shadow: 0 0 15px rgba(0, 204, 255, 0.4) !important;
     }
 
-    /* Metric Cards - Premium Look with Depth */
+    /* Metric Cards - Premium Glowing Look */
     [data-testid="stMetricValue"] {
-        color: #00ff88 !important;
+        color: #00eeff !important;
         font-weight: 800 !important;
         font-size: 2.2em !important;
+        text-shadow: 0 0 15px rgba(0, 238, 255, 0.5) !important;
     }
 
     [data-testid="stMetricLabel"] {
-        color: #7a8592 !important;
+        color: #6b8aaa !important;
         font-size: 0.95em !important;
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
     }
 
     .stMetric {
-        background: linear-gradient(135deg, #0f1419 0%, #1a1f2a 100%) !important;
-        border: 1px solid #1f2d3a !important;
+        background: linear-gradient(135deg, rgba(10, 15, 35, 0.8) 0%, rgba(20, 30, 60, 0.6) 100%) !important;
+        border: 1.5px solid #0099ff !important;
         border-radius: 12px !important;
         padding: 20px !important;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(0, 221, 85, 0.1) !important;
+        box-shadow: 0 0 20px rgba(0, 153, 255, 0.15), inset 0 1px 0 rgba(0, 204, 255, 0.1) !important;
         transition: all 0.3s ease !important;
+        backdrop-filter: blur(10px) !important;
     }
 
     .stMetric:hover {
-        border-color: #00dd55 !important;
-        box-shadow: 0 12px 32px rgba(0, 221, 85, 0.2), inset 0 1px 0 rgba(0, 221, 85, 0.2) !important;
+        border-color: #00ccff !important;
+        box-shadow: 0 0 30px rgba(0, 204, 255, 0.3), inset 0 1px 0 rgba(0, 238, 255, 0.2) !important;
     }
 
-    /* Attack Flow Cards - Enhanced Styling */
+    /* Attack Flow Cards - Enhanced Blue Glow */
     .flow-card {
-        background: linear-gradient(135deg, #0f1419 0%, #1a1f2a 100%) !important;
-        border: 1.5px solid #1f2d3a !important;
+        background: linear-gradient(135deg, rgba(10, 15, 35, 0.9) 0%, rgba(20, 30, 60, 0.7) 100%) !important;
+        border: 1.5px solid #0099ff !important;
         border-radius: 12px !important;
         padding: 20px 12px !important;
         margin: 8px !important;
         text-align: center !important;
-        color: #00dd55 !important;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+        color: #00ccff !important;
+        box-shadow: 0 0 25px rgba(0, 153, 255, 0.2), inset 0 0 15px rgba(0, 204, 255, 0.05) !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         backdrop-filter: blur(10px) !important;
     }
 
     .flow-card:hover {
-        border-color: #00ff88 !important;
-        box-shadow: 0 12px 32px rgba(0, 255, 136, 0.25) !important;
+        border-color: #00eeff !important;
+        box-shadow: 0 0 40px rgba(0, 238, 255, 0.4), inset 0 0 20px rgba(0, 204, 255, 0.1) !important;
         transform: translateY(-4px) !important;
     }
 
     .flow-card h3 {
         font-size: 2.2em !important;
         margin: 8px 0 !important;
-        color: #00ff88 !important;
+        color: #00eeff !important;
+        text-shadow: 0 0 15px rgba(0, 238, 255, 0.4) !important;
     }
 
     .flow-card b {
-        color: #00dd55 !important;
+        color: #00ccff !important;
         font-weight: 700 !important;
     }
 
     .flow-card small {
-        color: #7a8592 !important;
+        color: #6b8aaa !important;
         display: block !important;
         margin: 6px 0 !important;
     }
 
-    /* DataFrame Tables - Professional Look */
+    /* DataFrame Tables - Professional Blue Look */
     [data-testid="stTable"], .stDataFrame {
-        background-color: #0f1419 !important;
-        border: 1px solid #1f2d3a !important;
+        background-color: rgba(10, 15, 35, 0.8) !important;
+        border: 1px solid #0099ff !important;
         border-radius: 8px !important;
         overflow: hidden !important;
+        box-shadow: 0 0 20px rgba(0, 153, 255, 0.15) !important;
     }
 
     thead th {
-        background-color: #1a1f2a !important;
-        color: #00dd55 !important;
+        background-color: rgba(10, 20, 50, 0.9) !important;
+        color: #00ccff !important;
         font-weight: 700 !important;
-        border-bottom: 2px solid #00dd55 !important;
+        border-bottom: 2px solid #0099ff !important;
         padding: 14px !important;
+        text-shadow: 0 0 10px rgba(0, 153, 255, 0.3) !important;
     }
 
     tbody td {
-        border-bottom: 1px solid #1f2d3a !important;
+        border-bottom: 1px solid #1f3a5a !important;
         padding: 12px 14px !important;
-        color: #b0b8c1 !important;
+        color: #a8c5dd !important;
     }
 
     tbody tr:hover {
-        background-color: rgba(0, 221, 85, 0.05) !important;
+        background-color: rgba(0, 153, 255, 0.08) !important;
     }
 
     /* Alert Cards - Severity-Based Colors */
     div.stAlert[data-baseweb="notification"] {
-        background-color: #0f1419 !important;
-        border-left: 4px solid #00dd55 !important;
+        background: linear-gradient(135deg, rgba(10, 15, 35, 0.9) 0%, rgba(20, 30, 60, 0.7) 100%) !important;
+        border-left: 4px solid #00ccff !important;
         border-radius: 8px !important;
         padding: 16px !important;
-        color: #b0b8c1 !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        color: #a8c5dd !important;
+        box-shadow: 0 0 20px rgba(0, 153, 255, 0.15) !important;
+        backdrop-filter: blur(10px) !important;
     }
 
     /* Error Alert */
     div.stAlert[data-icon="error"] {
-        border-left-color: #ff4444 !important;
+        border-left-color: #ff4466 !important;
     }
 
     /* Warning Alert */
     div.stAlert[data-icon="warning"] {
-        border-left-color: #ffaa00 !important;
+        border-left-color: #ffaa33 !important;
     }
 
     /* Success Alert */
     div.stAlert[data-icon="success"] {
-        border-left-color: #00dd55 !important;
+        border-left-color: #00cc88 !important;
     }
 
     /* Info Alert */
     div.stAlert[data-icon="info"] {
-        border-left-color: #00ccff !important;
+        border-left-color: #00eeff !important;
     }
 
     /* Expander - Premium Styling */
     details {
-        background-color: #0f1419 !important;
-        border: 1px solid #1f2d3a !important;
+        background: linear-gradient(135deg, rgba(10, 15, 35, 0.8) 0%, rgba(20, 30, 60, 0.6) 100%) !important;
+        border: 1px solid #0099ff !important;
         border-radius: 8px !important;
         padding: 14px !important;
         margin: 8px 0 !important;
+        box-shadow: 0 0 15px rgba(0, 153, 255, 0.1) !important;
+        backdrop-filter: blur(10px) !important;
     }
 
     details summary {
-        color: #00dd55 !important;
+        color: #00ccff !important;
         font-weight: 600 !important;
         cursor: pointer !important;
+        text-shadow: 0 0 10px rgba(0, 204, 255, 0.2) !important;
     }
 
     details summary:hover {
-        color: #00ff88 !important;
+        color: #00eeff !important;
     }
 
     /* Horizontal Rule */
     hr {
         border: none !important;
-        border-top: 1px solid #1f2d3a !important;
+        border-top: 1px solid #1f3a5a !important;
         margin: 24px 0 !important;
     }
 
     /* Input Fields */
     input, select, textarea {
-        background-color: #1a1f2a !important;
-        color: #b0b8c1 !important;
-        border: 1px solid #1f2d3a !important;
+        background-color: rgba(10, 20, 50, 0.6) !important;
+        color: #a8c5dd !important;
+        border: 1px solid #0099ff !important;
         border-radius: 6px !important;
         padding: 10px 12px !important;
+        box-shadow: 0 0 10px rgba(0, 153, 255, 0.1) !important;
     }
 
     input:focus, select:focus, textarea:focus {
-        border-color: #00dd55 !important;
-        box-shadow: 0 0 0 3px rgba(0, 221, 85, 0.1) !important;
+        border-color: #00ccff !important;
+        box-shadow: 0 0 0 3px rgba(0, 204, 255, 0.2), 0 0 15px rgba(0, 153, 255, 0.3) !important;
     }
 
     /* Sidebar Text */
     [data-testid="stSidebar"] h1 {
-        color: #00ff88 !important;
+        color: #00eeff !important;
         margin-bottom: 4px !important;
+        text-shadow: 0 0 20px rgba(0, 238, 255, 0.3) !important;
     }
 
     [data-testid="stSidebar"] .caption {
-        color: #7a8592 !important;
+        color: #6b8aaa !important;
     }
 
     /* Progress Bar */
     .stProgress > div > div > div {
-        background-color: #00dd55 !important;
+        background: linear-gradient(90deg, #0099ff 0%, #00ccff 100%) !important;
+        box-shadow: 0 0 15px rgba(0, 204, 255, 0.5) !important;
     }
 
     /* Download Button */
     .stDownloadButton > button {
-        background: linear-gradient(135deg, #00dd55 0%, #00bb44 100%) !important;
-        color: #0a0e14 !important;
-        border: none !important;
+        background: linear-gradient(135deg, #00ccff 0%, #0099ff 100%) !important;
+        color: #0a0e1a !important;
+        border: 1px solid #00eeff !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
+        box-shadow: 0 0 20px rgba(0, 204, 255, 0.3) !important;
     }
 
     .stDownloadButton > button:hover {
-        background: linear-gradient(135deg, #00ff88 0%, #00dd55 100%) !important;
+        background: linear-gradient(135deg, #00eeff 0%, #00ccff 100%) !important;
+        box-shadow: 0 0 30px rgba(0, 238, 255, 0.5) !important;
     }
 
     /* Code Block */
     pre {
-        background-color: #0f1419 !important;
-        border: 1px solid #1f2d3a !important;
+        background-color: rgba(10, 20, 50, 0.8) !important;
+        border: 1px solid #0099ff !important;
         border-radius: 8px !important;
         padding: 16px !important;
-        color: #00dd55 !important;
+        color: #00ccff !important;
+        box-shadow: 0 0 15px rgba(0, 153, 255, 0.1) !important;
     }
 
     code {
-        background-color: #1a1f2a !important;
-        color: #00dd55 !important;
+        background-color: rgba(10, 20, 50, 0.6) !important;
+        color: #00eeff !important;
         border-radius: 4px !important;
         padding: 2px 6px !important;
     }
